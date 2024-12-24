@@ -59,3 +59,11 @@ variable "path_master" {
     default = "../Install_kube_cilium_helm/master.sh"
   
 }
+
+variable "worker" {
+  type = map(object({
+    size_disk    = number
+    disk_type    = string
+  }))
+
+}

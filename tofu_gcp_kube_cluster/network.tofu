@@ -1,13 +1,13 @@
 resource "google_compute_network" "kube_gcp" {
   name                    = "kube-network"        
-  auto_create_subnetworks = true                    
+  auto_create_subnetworks = false                    
 }
 
 resource "google_compute_subnetwork" "kube_gcp_subnet" {
   name          = "kube-gcp-subnet"                   
   region        = var.gcp_region                      
   network       = google_compute_network.kube_gcp.self_link 
-  ip_cidr_range = "10.0.0.0/24"                       
+  ip_cidr_range = "10.132.0.0/20"                       
 }
 
 resource "google_compute_firewall" "kube_gcp_firewall" {
@@ -37,6 +37,7 @@ resource "google_compute_firewall" "default_allow_icmp" {
   }
 
   source_ranges = ["0.0.0.0/0"]
+  target_tags = [ "kube-node-port" ]
 }
 
 resource "google_compute_firewall" "default_allow_internal" {
@@ -57,5 +58,20 @@ resource "google_compute_firewall" "default_allow_internal" {
     protocol = "icmp"
   }
 
-  source_ranges = ["10.128.0.0/9"]
+  source_ranges = ["10.132.0.0/20"]
+  target_tags = [ "kube-node-port" ]
+}
+
+resource "google_compute_firewall" "default_allow_egress" {
+  name    = "default-allow-egress-any-any"
+  network = google_compute_network.kube_gcp.self_link
+
+  direction = "EGRESS"  
+
+  allow {
+    protocol = "all"  
+  }
+
+  destination_ranges = ["0.0.0.0/0"]
+  target_tags = [ "kube-node-port" ] 
 }

@@ -3,7 +3,7 @@ resource "google_compute_instance" "control_plan" {
   machine_type = var.instance_type
   zone         = var.zone
   allow_stopping_for_update = true
-    tags         = [ "kube-node-port", "kube" ]
+    tags         = [ "kube-node-port" ]
   boot_disk {
     initialize_params {
       image = var.image
