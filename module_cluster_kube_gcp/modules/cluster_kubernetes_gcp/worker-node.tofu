@@ -33,7 +33,7 @@ resource "google_compute_instance" "worker_node" {
     scopes = ["cloud-platform"]
   }
 metadata = {
-  ssh-keys = locals.ssh_keys_worker[each.key]
+  ssh-keys = local.ssh_keys_worker[each.key]
 }
 }
 
