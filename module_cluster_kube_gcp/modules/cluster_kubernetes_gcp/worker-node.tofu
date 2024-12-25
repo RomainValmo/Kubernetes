@@ -54,7 +54,7 @@ resource "null_resource" "remote_script_execution_worker" {
 
     connection {
       type        = "ssh"
-      user        = locals.ssh_host_worker[each.key]
+      user        = local.ssh_host_worker[each.key]
       private_key = file(var.private_key_ssh)
       host        = each.value.network_interface[0].access_config[0].nat_ip 
     }
@@ -68,7 +68,7 @@ resource "null_resource" "remote_script_execution_worker" {
 
     connection {
       type        = "ssh"
-      user        = locals.ssh_host_worker[each.key]
+      user        = local.ssh_host_worker[each.key]
       private_key = file(var.private_key_ssh)
       host        = each.value.network_interface[0].access_config[0].nat_ip
     }
