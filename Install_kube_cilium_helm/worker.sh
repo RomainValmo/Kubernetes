@@ -69,6 +69,22 @@ apt-get remove -y docker.io containerd kubelet kubeadm kubectl kubernetes-cni ||
 apt-get autoremove -y
 systemctl daemon-reload
 
+
+
+### install podman
+. /etc/os-release
+echo "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /" | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:testing.list
+curl -L "http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/Release.key" | sudo apt-key add -
+apt-get update -qq
+apt-get -qq -y install podman cri-tools containers-common
+rm /etc/apt/sources.list.d/devel:kubic:libcontainers:testing.list
+cat <<EOF | sudo tee /etc/containers/registries.conf
+[registries.search]
+registries = ['docker.io']
+EOF
+
+
+### install packages
 sudo apt-get update
 sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 sudo mkdir -p -m 755 /etc/apt/keyrings
@@ -167,60 +183,11 @@ systemctl restart containerd
 systemctl enable kubelet && systemctl start kubelet
 
 
+
 ### init k8s
-rm /root/.kube/config || true
-kubeadm init --kubernetes-version=${KUBE_VERSION} --ignore-preflight-errors=NumCPU --skip-token-print --pod-network-cidr 192.168.0.0/16
-
-
-if [ -n "$SUDO_USER" ]; then
-    USER_ORIGIN=$SUDO_USER
-else
-    USER_ORIGIN=$(whoami)
-fi
-sudo mkdir -p /home/$USER_ORIGIN/.kube/
-sudo cp -i /etc/kubernetes/admin.conf /home/$USER_ORIGIN/.kube/config
-sudo mkdir -p ~/.kube/
-sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
-sudo chown $USER_ORIGIN:$USER_ORIGIN /home/$USER_ORIGIN/.kube/config
-sudo chmod 600 /home/$USER_ORIGIN/.kube/config
-sudo chmod 600 ~/.kube/config
-# etcdctl
-ETCDCTL_VERSION=v3.5.1
-ETCDCTL_ARCH=$(dpkg --print-architecture)
-ETCDCTL_VERSION_FULL=etcd-${ETCDCTL_VERSION}-linux-${ETCDCTL_ARCH}
-wget https://github.com/etcd-io/etcd/releases/download/${ETCDCTL_VERSION}/${ETCDCTL_VERSION_FULL}.tar.gz
-tar xzf ${ETCDCTL_VERSION_FULL}.tar.gz ${ETCDCTL_VERSION_FULL}/etcdctl
-mv ${ETCDCTL_VERSION_FULL}/etcdctl /usr/bin/
-rm -rf ${ETCDCTL_VERSION_FULL} ${ETCDCTL_VERSION_FULL}.tar.gz
-
-# Install HELM 
-HELMVERSION=$(curl -s https://api.github.com/repos/helm/helm/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-wget https://get.helm.sh/helm-${HELMVERSION}-linux-${PLATFORM}.tar.gz
-tar -zxvf helm-${HELMVERSION}-linux-${PLATFORM}.tar.gz
-sudo mv linux-${PLATFORM}/helm /usr/local/bin/helm
-sudo chmod 755 /usr/local/bin/helm
-echo "$(helm version --short) installed"
-rm -R ./linux-${PLATFORM}
-rm helm-${HELMVERSION}-linux-${PLATFORM}.tar.gz
-
-
-#delete Kube-proxy 
-kubectl delete ds kube-proxy -n kube-system
-
-# Install Cilium
-
-helm repo add cilium https://helm.cilium.io/
-CILIUMVERSION=$(helm search repo cilium/cilium --versions | awk 'NR==2 {print $2}')
-helm install cilium cilium/cilium --version ${CILIUMVERSION} --namespace kube-system --set kubeProxyReplacement=true
-CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
-CLI_ARCH=${PLATFORM}
-if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
-curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
-sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
-sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
-rm cilium-linux-${CLI_ARCH}.tar.gz cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
-cilium uninstall
-cilium install
+kubeadm reset -f
+systemctl daemon-reload
+service kubelet start
 
 
 ## Install Falco
@@ -234,20 +201,10 @@ sudo apt install -y dialog
 sudo FALCO_DRIVER_CHOICE=kmod FALCO_FRONTEND=noninteractive apt install -y falco
 
 
-##Install Kube Dashboard and enable NodPort to Dashboard
+## POST INSTALLATION
 
-helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
-helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard
-cat > ./values.yaml <<EOF
-kong:
-  proxy:
-    type: NodePort
-  http:
-    enabled: true
-EOF
-helm upgrade kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard -f values.yaml -n kubernetes-dashboard
-rm ./values.yaml
 
 echo
-echo "### COMMAND TO ADD A WORKER NODE ###"
-kubeadm token create --print-join-command --ttl 0
+echo "EXECUTE ON MASTER: kubeadm token create --print-join-command --ttl 0"
+echo "THEN RUN THE OUTPUT AS COMMAND HERE TO ADD AS WORKER"
+echo
