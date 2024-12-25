@@ -1,13 +1,23 @@
+locals {
+  ssh_keys_worker = { for key, node in var.worker :
+    key => "${node.ssh-host}:${file(node.ssh-file)}"
+  }
+  ssh_host_worker = { for key, node in var.worker :
+    key => node.ssh-host
+  }
+}
+
+
 resource "google_compute_instance" "worker_node" {
   for_each = var.worker
   name         = each.key
-  machine_type = var.instance_type
-  zone         = var.zone
-  allow_stopping_for_update = true
-    tags         = [ "kube-node-port-worker" ]
+  machine_type = each.value.instance_type
+  zone         = each.value.zone
+  allow_stopping_for_update = each.value.allow_stopping_for_update
+    tags         = var.tag_worker
   boot_disk {
     initialize_params {
-      image = var.image
+      image = each.value.image
       size =  each.value.size_disk
       type  = each.value.disk_type
     }
@@ -23,7 +33,7 @@ resource "google_compute_instance" "worker_node" {
     scopes = ["cloud-platform"]
   }
 metadata = {
-  ssh-keys = "romain:${file("./ssh.pub")}"
+  ssh-keys = locals.ssh_keys_worker[each.key]
 }
 }
 
@@ -39,13 +49,13 @@ resource "null_resource" "remote_script_execution_worker" {
   depends_on = [google_compute_instance.worker_node]
 
   provisioner "file" {
-    source      = "../Install_kube_cilium_helm/worker.sh"
+    source      = var.path_worker
     destination = "/tmp/remote-script.sh"
 
     connection {
       type        = "ssh"
-      user        = "romain"
-      private_key = file("./ssh")
+      user        = locals.ssh_host_worker[each.key]
+      private_key = file(var.private_key_ssh)
       host        = each.value.network_interface[0].access_config[0].nat_ip 
     }
   }
@@ -58,8 +68,8 @@ resource "null_resource" "remote_script_execution_worker" {
 
     connection {
       type        = "ssh"
-      user        = "romain"
-      private_key = file("./ssh")
+      user        = locals.ssh_host_worker[each.key]
+      private_key = file(var.private_key_ssh)
       host        = each.value.network_interface[0].access_config[0].nat_ip
     }
   }

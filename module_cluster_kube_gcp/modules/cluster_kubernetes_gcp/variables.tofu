@@ -14,44 +14,6 @@ variable "gcp_region" {
     type        = string
 }
 
-variable "instance" {
-    description = "Instance name"
-    type        = string
-  
-}
-
-variable "instance_type" {
-    description = "Instance type"
-    type        = string    
-  
-}
-
-variable "zone" {
-    description = "Zone"
-    type        = string    
-  
-}
-
-variable "image" {
-    description = "Image"
-    type        = string
-    default = "ubuntu-2004-focal-v20241219"
-  
-}
-
-variable "size_disk" {
-    description = "Disk size"
-    type        = number
-    default = 20
-  
-}
-
-variable "disk_type" {
-    description = "Disk type"
-    type        = string
-    default = "pd-standard"
-  
-}
 
 variable "path_master" {
     description = "Path to the startup script"
@@ -60,12 +22,44 @@ variable "path_master" {
   
 }
 
+variable "path_worker" {
+    description = "Path to the startup script"
+    type        = string
+    default = "../Install_kube_cilium_helm/worker.sh"
+  
+}
+
 variable "worker" {
   type = map(object({
+    instance_type    = string
+    zone    = string
+    allow_stopping_for_update    = bool
+    image    = string
     size_disk    = number
     disk_type    = string
+    ssh-host    = string
+    ssh-file    = string
   }))
+    default = {
+      "worker1" = {
+        instance_type = "e2-medium"
+        zone = "europe-west1-b"
+        allow_stopping_for_update = true
+        image = "ubuntu-2004-focal-v20241219"
+        size_disk = 20
+        disk_type = "pd-standard"
+        ssh-host = "romain"
+        ssh-file = "./ssh.pub"
+        
+      }
+    }
+}
 
+variable "tag_worker"{
+    type = list(string)
+    description = "value of the tag for the worker node"
+    default = ["kube-node-port-worker"]
+  
 }
 
 variable "tag_masternote"{
