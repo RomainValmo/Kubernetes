@@ -49,12 +49,6 @@ resource "google_compute_firewall" "kube_gcp_firewall_masternode_6443" {
   target_tags = [ "kube-node-port-masternode" ]
 }
 
-
-resource "google_compute_address" "kube_gcp_address" {
-  name   = "kube-gcp-address"
-  region = var.gcp_region
-}
-
 resource "google_compute_firewall" "default_allow_icmp" {
   name    = "default-allow-icmp-2"
   network = google_compute_network.kube_gcp.self_link
