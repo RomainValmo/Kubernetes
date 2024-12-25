@@ -3,12 +3,12 @@ name: Release
 on:
   push:
     branches:
-      - main  # Ou votre branche principale
+      - main  
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    environment: release  # Utilisez l'environnement si nécessaire
+    environment: release  
 
     steps:
       - name: Checkout code
@@ -20,7 +20,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20.8.1  # Version de Node.js nécessaire pour Semantic Release
+          node-version: 20.8.1  
 
       - name: Install dependencies
         run: npm install
