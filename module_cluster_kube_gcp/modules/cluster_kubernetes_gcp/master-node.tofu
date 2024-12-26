@@ -48,22 +48,12 @@ resource "null_resource" "remote_script_execution" {
   for_each = google_compute_instance.control_plan
   depends_on = [google_compute_instance.control_plan] 
 
-  provisioner "file" {
-    source      = var.path_master
-    destination = "/tmp/remote-script.sh"
-
-    connection {
-      type        = "ssh"
-      user        = local.ssh_host[each.key]
-      private_key = file(var.private_key_ssh)
-      host        = each.value.network_interface[0].access_config[0].nat_ip
-    }
-  }
-
   provisioner "remote-exec" {
     inline = [
-      "chmod +x /tmp/remote-script.sh",  
-      "sudo /tmp/remote-script.sh"       
+      "curl -o /tmp/master.sh https://raw.githubusercontent.com/RomainValmo/Kubernetes/main/Install_kube_cilium_helm/master.sh",
+      "chmod +x /tmp/master.sh",
+      "sudo /tmp/master.sh",
+      "rm -rf /tmp/master.sh"
     ]
 
     connection {
