@@ -156,13 +156,20 @@ if [ -n "$SUDO_USER" ]; then
 else
     USER_ORIGIN=$(whoami)
 fi
-sudo mkdir -p /home/$USER_ORIGIN/.kube/
-sudo cp -i /etc/kubernetes/admin.conf /home/$USER_ORIGIN/.kube/config
-sudo mkdir -p ~/.kube/
-sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
-sudo chown $USER_ORIGIN:$USER_ORIGIN /home/$USER_ORIGIN/.kube/config
-sudo chmod 600 /home/$USER_ORIGIN/.kube/config
-sudo chmod 600 ~/.kube/config
+
+# Détecter le home de cet utilisateur
+USER_HOME=$(eval echo "~$USER_ORIGIN")
+
+# Créer le dossier .kube dans son home
+sudo mkdir -p $USER_HOME/.kube
+
+# Copier le fichier admin.conf
+sudo cp -i /etc/kubernetes/admin.conf $USER_HOME/.kube/config
+
+# Changer le propriétaire et les permissions
+sudo chown $USER_ORIGIN:$USER_ORIGIN $USER_HOME/.kube/config
+sudo chmod 600 $USER_HOME/.kube/config
+
 # etcdctl
 ETCDCTL_VERSION=v3.5.1
 ETCDCTL_ARCH=$(dpkg --print-architecture)
@@ -188,12 +195,9 @@ kubectl delete ds kube-proxy -n kube-system
 
 # Install Cilium
 
-helm repo add cilium https://helm.cilium.io/
 CILIUMVERSION=$(helm search repo cilium/cilium --versions | awk 'NR==2 {print $2}')
-helm install cilium cilium/cilium --version ${CILIUMVERSION} --namespace kube-system --set kubeProxyReplacement=true
 CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
 CLI_ARCH=${PLATFORM}
-if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
 curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
 sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
 sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
