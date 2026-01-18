@@ -170,6 +170,11 @@ sudo cp -i /etc/kubernetes/admin.conf $USER_HOME/.kube/config
 sudo chown $USER_ORIGIN:$USER_ORIGIN $USER_HOME/.kube/config
 sudo chmod 600 $USER_HOME/.kube/config
 
+#
+sudo mkdir -p /home/outscale/.kube
+sudo cp -i /etc/kubernetes/admin.conf /home/outscale/.kube/config
+
+
 # etcdctl
 ETCDCTL_VERSION=v3.5.1
 ETCDCTL_ARCH=$(dpkg --print-architecture)
