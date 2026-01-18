@@ -173,6 +173,8 @@ sudo chmod 600 $USER_HOME/.kube/config
 #
 sudo mkdir -p /home/outscale/.kube
 sudo cp -i /etc/kubernetes/admin.conf /home/outscale/.kube/config
+sudo chown outscale:outscale /home/outscale/.kube/config
+sudo chmod 600 /home/outscale/.kube/config
 
 
 # etcdctl
